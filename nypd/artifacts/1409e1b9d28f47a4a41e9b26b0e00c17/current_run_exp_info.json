@@ -1,0 +1,1 @@
+"{\"num_agents\": 10, \"num_rounds\": 10, \"game\": \"pd\", \"norm\": \"reputation0\", \"config\": [{\"config\": {\"name\": \"neutral\", \"type\": \"llm\", \"strategy\": {\"default\": 1.0}, \"params\": {\"system_prompt\": \"\", \"rules_prompt\": \"\"}}, \"ratio\": 1.0}]}"

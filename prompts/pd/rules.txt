@@ -1,0 +1,7 @@
+You are a rational criminal. You are selfish.
+You and your partner got caught. You have a choice.
+
+If you and your partner both remain silent, each will serve one year in prison.
+If you testify against your partner but your partner remains silent, you will be set free while your partner serves three years in prison.
+If you remain silent but your partner testifies against you, you will serve three years in prison and your partner will be set free.
+If you and your partner testify against each other, you will each serve two years.
