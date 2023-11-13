@@ -24,6 +24,7 @@ from nypd.structures import (
     AgentConfig,
     RunInfo
 )
+from nypd.seed import AbsSeed
 
 from .artifact_processer import *
 
@@ -198,6 +199,7 @@ class Driver:
     def _play_with_setup_aux(
             exp: ExperimentSetup,
             exp_name: str,
+            seed: AbsSeed,
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
             tracked_live: bool = False
     ) -> Tuple[StatsCollector, Run]:
@@ -206,7 +208,7 @@ class Driver:
 
         env = BaseEnv(exp.num_agents, exp.num_rounds, game=game, norm=norm)
 
-        agents, st_ratio = registry.seed(
+        agents, st_ratio = seed.seed(
             env=env,
             agents=exp.config,
             count=exp.num_agents,
@@ -241,6 +243,7 @@ class Driver:
     def play_with_setup(
             exp: ExperimentSetup,
             exp_name: str,
+            seed: AbsSeed,
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
             initial_seed: int = 42,
             number_of_times: int = 1,
@@ -258,6 +261,7 @@ class Driver:
             Driver._play_with_setup_aux(
                 exp,
                 exp_name,
+                seed,
                 ml_flow_client,
                 tracked_live=tracked_live
             )
@@ -334,6 +338,7 @@ class Driver:
             num_agents: int,
             num_rounds: int,
             exp_name,
+            seed: AbsSeed,
             av_configs: List[AgentConfig],
             av_norm: List[str],
             av_game: List[str],
@@ -373,4 +378,4 @@ class Driver:
                         )
                     )
         for setup in tqdm(setups):
-            Driver.play_with_setup(setup, exp_name, ml_flow_client, tracked_live=tracked_live)
+            Driver.play_with_setup(setup, exp_name, seed, ml_flow_client, tracked_live=tracked_live)

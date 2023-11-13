@@ -56,4 +56,4 @@ if __name__ == "__main__":
     )
     EXPERIMENT_NAME = f"zak/llm-test"
 
-    Driver.play_with_setup(exp_setup, EXPERIMENT_NAME, client, initial_seed=42, number_of_times=1)
+    Driver.play_with_setup(exp_setup, EXPERIMENT_NAME, seed, client, initial_seed=42, number_of_times=1)
