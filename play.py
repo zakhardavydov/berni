@@ -7,17 +7,17 @@ from nypd.driver import Driver
 from nypd.structures import ExperimentSetup
 from nypd.strategy import registry
 
-from berni.agent import LLMAgent
-from berni.strategy import PromptStrategy
+from berni.agent import RiotLLMAgent
+from berni.strategy import RiotPromptStrategy
 from berni.swarm import PromptSwarmGenerator
+from berni.ps import RandomGridPartnerSelection
 
 
-AGENT_PROMPT_DIR = "./prompts/pd/agents"
-STRATEGY_PROMPT_DIR = "./prompts/pd/strategy"
-RULES_PROMPT_PATH = "./prompts/pd/rules.txt"
+AGENT_PROMPT_DIR = "./prompts/riot_reaper/agents"
+STRATEGY_PROMPT_DIR = "./prompts/riot_reaper/strategy"
+RULES_PROMPT_PATH = "./prompts/riot_reaper/rules.txt"
 
-
-NUM_AGENTS = 4
+GRID_SIZE = 5
 NUM_ROUNDS = 10
 
 NORM = "reputation0"
@@ -39,21 +39,30 @@ if __name__ == "__main__":
         llm=llm,
         agent_prompt_dir=AGENT_PROMPT_DIR,
         strategy_prompt_dir=STRATEGY_PROMPT_DIR,
-        rule_prompt_path=RULES_PROMPT_PATH
+        rule_prompt_path=RULES_PROMPT_PATH,
+        default_agent_type="opinion_llm"
     )
 
-    agent_config, strategy = generator.generate()
-    generator.register_strategy(registry, [(LLMAgent, s) for s in strategy])
+    ps = RandomGridPartnerSelection(grid_size=GRID_SIZE)
 
-    print(agent_config)
+    agent_config, strategy = generator.generate()
+    generator.register_strategy(registry, [(RiotLLMAgent, s) for s in strategy])
 
     exp_setup = ExperimentSetup(
-        num_agents=NUM_AGENTS,
+        num_agents=ps.num_agents(),
         num_rounds=NUM_ROUNDS,
         game="pd",
         norm=NORM,
         config=agent_config
     )
-    EXPERIMENT_NAME = f"zak/llm-test"
+    EXPERIMENT_NAME = f"zak/riot_reaper"
 
-    Driver.play_with_setup(exp_setup, EXPERIMENT_NAME, seed, client, initial_seed=42, number_of_times=1)
+    Driver.play_with_setup(
+        exp=exp_setup,
+        exp_name=EXPERIMENT_NAME,
+        seed=ps,
+        ps=ps,
+        ml_flow_client=client,
+        initial_seed=42,
+        number_of_times=1
+    )

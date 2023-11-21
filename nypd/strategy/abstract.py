@@ -9,5 +9,5 @@ class AbsStrategy(ABC):
     id: str
 
     @abstractmethod
-    def play(self, agent: AbsAgent) -> Action:
+    def play(self, agent: AbsAgent, opponent: AbsAgent | None = None) -> Action:
         pass

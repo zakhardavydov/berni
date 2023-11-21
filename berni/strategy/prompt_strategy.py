@@ -8,11 +8,6 @@ from nypd.structures import Action
 from berni.agent import LLMAgent
 
 
-class PromptResponse(BaseModel):
-    justification: str = Field(description="Rationalise step-by-step")
-    action: str = Field(description="Single word. Either 'testify' or 'silent'")
-
-
 class PromptStrategy(AbsStrategy):
 
     def __init__(self, llm: BaseLanguageModel, id: str, prompt: str):
@@ -20,7 +15,6 @@ class PromptStrategy(AbsStrategy):
 
         self._prompt = prompt
         self._llm = llm
-        self._parser = PydanticOutputParser(pydantic_object=PromptResponse)
 
     def _prompt_builder(self, agent: LLMAgent) -> str:
         return f"""

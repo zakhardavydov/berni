@@ -25,6 +25,7 @@ from nypd.structures import (
     RunInfo
 )
 from nypd.seed import AbsSeed
+from nypd.ps import AbsPartnerSelection
 
 from .artifact_processer import *
 
@@ -200,19 +201,22 @@ class Driver:
             exp: ExperimentSetup,
             exp_name: str,
             seed: AbsSeed,
+            ps: AbsPartnerSelection,
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
             tracked_live: bool = False
     ) -> Tuple[StatsCollector, Run]:
         game = game_registry.registry[exp.game](**exp.game_params)
         norm = norm_registry.registry[exp.norm](**exp.norm_params)
 
-        env = BaseEnv(exp.num_agents, exp.num_rounds, game=game, norm=norm)
+        env = BaseEnv(exp.num_agents, exp.num_rounds, game=game, norm=norm, ps=ps)
 
         agents, st_ratio = seed.seed(
             env=env,
             agents=exp.config,
             count=exp.num_agents,
         )
+
+        env.setup()
 
         experiment = ml_flow_client.get_experiment_by_name(exp_name)
         if experiment is None:
@@ -244,6 +248,7 @@ class Driver:
             exp: ExperimentSetup,
             exp_name: str,
             seed: AbsSeed,
+            ps: AbsPartnerSelection,
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
             initial_seed: int = 42,
             number_of_times: int = 1,
@@ -262,6 +267,7 @@ class Driver:
                 exp,
                 exp_name,
                 seed,
+                ps,
                 ml_flow_client,
                 tracked_live=tracked_live
             )
@@ -339,6 +345,7 @@ class Driver:
             num_rounds: int,
             exp_name,
             seed: AbsSeed,
+            ps: AbsPartnerSelection,
             av_configs: List[AgentConfig],
             av_norm: List[str],
             av_game: List[str],
@@ -378,4 +385,4 @@ class Driver:
                         )
                     )
         for setup in tqdm(setups):
-            Driver.play_with_setup(setup, exp_name, seed, ml_flow_client, tracked_live=tracked_live)
+            Driver.play_with_setup(setup, exp_name, seed, ps, ml_flow_client, tracked_live=tracked_live)

@@ -27,6 +27,7 @@ class BaseAgent(AbsAgent):
         self._history: List[AgentHistoryItem] = []
 
         self._opponent: Optional[AbsAgent] = None
+        self.opponent_model: Optional[AbsAgent] = None
 
         self._score = 0
 
@@ -47,7 +48,7 @@ class BaseAgent(AbsAgent):
         """
         self.opponent = opponent
         if self.strategy is not None:
-            self.action = self.strategy.play(agent=self)
+            self.action = self.strategy.play(agent=self, opponent=self._env.agents[opponent])
         else:
             raise ValueError("Strategy is not defined")
         return self.action
@@ -135,7 +136,8 @@ class BaseAgent(AbsAgent):
     def get_last_history(self, buffer_size: int = 1) -> List[AgentHistoryItem]:
         return self._history[-buffer_size:]
 
-    def save_history(self, opponent, action, reward, round):
+    def save_history(self, opponent, opponent_model, action, reward, round):
+        self.opponent_model = opponent_model
         self._history.append(
             AgentHistoryItem(
                 opponent=opponent,

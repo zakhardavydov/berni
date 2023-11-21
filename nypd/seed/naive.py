@@ -24,7 +24,7 @@ class NaiveSeed(AbsSeed):
                 list(allowed_strategy.keys()), 1, p=list(allowed_strategy.values())
             )
             picked = picked[0]
-            return picked, registry[agent_type.name][picked]
+            return picked, registry.registry[agent_type.name][picked]
         # NOTE: bad design here, assuming only q_agent will be enter the else case
         list_to_choice = list(registry[agent_type.name].items())
         picked_idx = np.random.choice(len(list_to_choice))
@@ -32,24 +32,25 @@ class NaiveSeed(AbsSeed):
         return picked
 
     @staticmethod
-    def get_st_count(self):
+    def get_st_count():
         st_count = {}
         st_list = []
+        reg = registry.registry
         # NOTE: so inefficient!!!
-        for cur_type in list(registry.keys()):
-            for cur_st in registry[cur_type]:
+        for cur_type in list(reg.keys()):
+            for cur_st in reg[cur_type]:
                 st_list.append(cur_st)
 
         st_count = {key: 0 for key in st_list}
         return st_count
     
     @staticmethod
-    def pick_strategy(picked_config, constructor):
+    def pick_strategy(picked_config: AgentConfig, constructor: Type[BaseAgent]):
         if isinstance(picked_config.strategy, Dict):
             st_id, st = NaiveSeed.__pick_strategy(constructor, picked_config.strategy)
         elif isinstance(picked_config.strategy, str):
             st_id = picked_config.strategy
-            st = registry[constructor][st_id]
+            st = registry.registry[constructor][st_id]
         else:
             st_id, st = NaiveSeed.__pick_strategy(constructor, None)
 

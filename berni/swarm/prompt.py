@@ -2,7 +2,7 @@ from langchain.llms.base import BaseLanguageModel
 
 from nypd.structures import AgentConfigs, AgentConfigPrePlay, AgentConfig
 
-from berni.strategy import PromptStrategy
+from berni.strategy import PromptStrategy, RiotPromptStrategy
 
 from .abs import AbsSwarmGenerator
 
@@ -34,13 +34,13 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
             strategy_name: 1 / len(self.strategies) for strategy_name in self.strategies.keys()
         }
 
-    def _init_strategy(self) -> list[PromptStrategy]:
+    def _init_strategy(self) -> list[RiotPromptStrategy]:
         return [
-            PromptStrategy(llm=self._llm, id=strategy_name, prompt=prompt)
+            RiotPromptStrategy(llm=self._llm, id=strategy_name, prompt=prompt)
             for strategy_name, prompt in self.strategies.items()
         ]
 
-    def generate(self, *args, **kwargs) -> tuple[AgentConfigs, list[PromptStrategy]]:
+    def generate(self, *args, **kwargs) -> tuple[AgentConfigs, list[RiotPromptStrategy]]:
         ratio = self.get_agent_ratio()
         strategy = self._init_strategy()
         configs = []
