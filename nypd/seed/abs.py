@@ -10,7 +10,6 @@ class AbsSeed(ABC):
     def seed(
             self,
             env: AbsEnv,
-            agents: AgentConfigs,
-            count: int,
+            agents: AgentConfigs
     ) -> tuple[list[BaseAgent], dict[str, float]]:
         raise NotImplementedError

@@ -163,3 +163,7 @@ cython_debug/
 
 nypd/artifacts
 mlruns
+
+llama.cpp/
+
+metrics/

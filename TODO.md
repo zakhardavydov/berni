@@ -1,0 +1,9 @@
+- [ ] Seeds
+- [ ] Eliminate border effect by mapping grid to torus/sphere
+- [x] Mistral
+- [ ] DPO agents instead of prompting
+- [ ] Scaling up the grid (10, 20, 100?)
+- [ ] Scaling up the graph
+- [ ] Different types of prompts/representations
+- [ ] Evaluate emergent patterns (celluar automate)
+- [ ] Change temp

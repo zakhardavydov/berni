@@ -1,0 +1,8 @@
+agent,radical
+bystander, 0
+onlooker,1
+protestor,2
+demonstrator,3
+instigator,4
+agitator,5
+rioter,6

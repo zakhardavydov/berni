@@ -136,14 +136,15 @@ class BaseAgent(AbsAgent):
     def get_last_history(self, buffer_size: int = 1) -> List[AgentHistoryItem]:
         return self._history[-buffer_size:]
 
-    def save_history(self, opponent, opponent_model, action, reward, round):
+    def save_history(self, opponent, opponent_model, action, reward, round, bias_gap):
         self.opponent_model = opponent_model
         self._history.append(
             AgentHistoryItem(
                 opponent=opponent,
                 action=action,
                 reward=reward,
-                round=round
+                round=round,
+                bias_gap=bias_gap
             )
         )
 

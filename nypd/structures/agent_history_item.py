@@ -9,3 +9,4 @@ class AgentHistoryItem:
     action: Action
     reward: float
     round: int
+    bias_gap: int | None = None

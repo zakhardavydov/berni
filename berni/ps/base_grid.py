@@ -78,16 +78,15 @@ class BaseGridPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
     def seed(
             self,
             env: AbsEnv,
-            agents: AgentConfigs,
-            count: int
+            agents: AgentConfigs
     )  -> tuple[list[BaseAgent], dict[str, float]]:
         self._party = {i: party for i, party in enumerate(agents.configs)}
         self._party_index = [i for i, _ in enumerate(agents.configs)]
-        print(self._party)
+        print("Agents:\n", self._party)
         self._party_prob = [p.ratio for p in agents.configs]
-        print(self._party_prob)
+        print("Agent occurance probabilities:\n", self._party_prob)
         self._matrix = self.generate_grid(self.grid_size, self.grid_size, self._party_index, self._party_prob)
-        print(self._matrix)
+        print("Resultant grid matrix:\n", self._matrix)
         
         out = []
 
@@ -102,7 +101,7 @@ class BaseGridPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
                 agent = constructor(env=env, id=agent_id, strategy=strategy, **party.config.params)
                 out.append(agent)
                 st_count[st_id] += 1
-        st_ratio = {key: value / count for key, value in st_count.items()}
+        st_ratio = {key: value / self.cell_size for key, value in st_count.items()}
         return out, st_ratio
     
     @abstractmethod

@@ -1,0 +1,23 @@
+techmonks_big:
+  game: techmonks_1
+  results_repo: metrics
+  agent_name: opinion_llm
+  ps: random_grid
+  bias_primer:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  - 0.6
+  llm:
+    model_type: llama
+    model: "/Users/zakdavydov/.cache/lm-studio/models/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+    temp: 0
+  grid_size:
+  - 20
+  - 40
+  num_rounds: 20
+  seeds:
+  - 42
+  - 69

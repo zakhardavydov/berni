@@ -1,0 +1,5 @@
+{agent_prompt}
+You need to reflect on yourself and answer the question: {question}
+You can strcitly only respond with: {allowed_answers}.
+In your answer take in the account that your past/future actions determine it.
+Answer:

@@ -22,5 +22,7 @@ class LLMAgent(BaseAgent):
         self.rules_prompt = rules_prompt
         self.system_prompt = system_prompt
 
+        self.quiz_performance = {}
+
 
 agent_registry.add(LLMAgent)

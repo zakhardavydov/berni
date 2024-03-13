@@ -65,7 +65,7 @@ class AbsAgent(ABC):
         pass
 
     @abstractmethod
-    def save_history(self, opponent, opponent_model, action, reward, round):
+    def save_history(self, opponent, opponent_model, action, reward, round, bias_gap):
         pass
 
     @abstractmethod

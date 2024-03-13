@@ -16,11 +16,12 @@ class PromptStrategy(AbsStrategy):
         self._prompt = prompt
         self._llm = llm
 
+    def base_prompt(self, agent: LLMAgent) -> str:
+        return f"{agent.rules_prompt}\n{agent.system_prompt}\n{self._prompt}"
+
     def _prompt_builder(self, agent: LLMAgent) -> str:
         return f"""
-            {agent.rules_prompt}\n
-            {agent.system_prompt}\n
-            {self._prompt}\n
+            {self.base_prompt(agent)}
             You can either 'testify' or be 'silent'. In one word, what's your action?:
             """
 
@@ -34,4 +35,3 @@ class PromptStrategy(AbsStrategy):
         if "silent" in output.lower():
             return Action.C
         return Action.D
-

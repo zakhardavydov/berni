@@ -9,7 +9,7 @@ class RandomGridPartnerSelection(BaseGridPartnerSelection):
     def __init__(self, grid_size: int) -> None:
         super().__init__(grid_size=grid_size)
 
-    def _select(self, agent_index: str) -> int:
+    def _select(self, agent_index: int) -> int:
         neighbours = self.neighbours(agent_index=agent_index)
         return random.choice(neighbours)
 

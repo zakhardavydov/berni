@@ -10,5 +10,5 @@ class StructuredPartnerSelection(AbsPartnerSelection):
         raise NotImplementedError
     
     @abstractmethod
-    def neighbours(self, depth: int = 1) -> list[int]:
+    def neighbours(self, agent_index: int, depth: int = 1) -> list[int]:
         raise NotImplementedError

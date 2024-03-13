@@ -203,12 +203,12 @@ class Driver:
             seed: AbsSeed,
             ps: AbsPartnerSelection,
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
-            tracked_live: bool = False
+            tracked_live: bool = False,
+            env: AbsEnv | None = None
     ) -> Tuple[StatsCollector, Run]:
-        game = game_registry.registry[exp.game](**exp.game_params)
-        norm = norm_registry.registry[exp.norm](**exp.norm_params)
 
-        env = BaseEnv(exp.num_agents, exp.num_rounds, game=game, norm=norm, ps=ps)
+        if not env:
+            env = BaseEnv.from_exp_setup(exp_setup=exp, ps=ps)
 
         agents, st_ratio = seed.seed(
             env=env,
@@ -216,8 +216,7 @@ class Driver:
             count=exp.num_agents,
         )
 
-        env.setup()
-
+        """
         experiment = ml_flow_client.get_experiment_by_name(exp_name)
         if experiment is None:
             ml_flow_client.create_experiment(exp_name)
@@ -230,18 +229,23 @@ class Driver:
         # NOTE: ADD PARAM that want to logged in MLflow here!!!
         ml_flow_client.log_param(run.info.run_id, "num-agents", exp.num_agents)
         ml_flow_client.log_param(run.info.run_id, "num-rounds", exp.num_rounds)
-        ml_flow_client.log_param(run.info.run_id, "active-norm", norm.name)
-        ml_flow_client.log_param(run.info.run_id, "norm-reward", norm.reward)
+        ml_flow_client.log_param(run.info.run_id, "active-norm", env.norm.name)
+        ml_flow_client.log_param(run.info.run_id, "norm-reward", env.norm.reward)
+        """
 
-        collected = Driver.play_predefined_agents(env, agents, ml_flow_client, run.info.run_id, tracked_live=tracked_live)
+        collected = Driver.play_predefined_agents(env, agents, ml_flow_client, None, tracked_live=tracked_live)
+        
+        """
         collected.ratio_tracker = ratio # maybe can be combined with next line, kept seperate just to not break the code
         collected.add_metric("ratio", ratio)
+        
         
         # NOTE: ADD artifact want ot logged in MLflow here!!!
         Driver.log_current_artifact(ml_flow_client, run, collected, exp)
 
         mlflow.end_run()
-        return collected, run
+        """
+        return collected
     
     @staticmethod
     def play_with_setup(
@@ -252,7 +256,8 @@ class Driver:
             ml_flow_client: Optional[mlflow.MlflowClient] = None,
             initial_seed: int = 42,
             number_of_times: int = 1,
-            tracked_live: bool = False
+            tracked_live: bool = False,
+            env: AbsEnv | None = None
     ) -> None:
         # seed numpy
         np.random.seed(initial_seed)
@@ -269,7 +274,8 @@ class Driver:
                 seed,
                 ps,
                 ml_flow_client,
-                tracked_live=tracked_live
+                tracked_live=tracked_live,
+                env=env
             )
 
 
@@ -281,6 +287,7 @@ class Driver:
             run_id: Optional[str] = None,
             tracked_live: bool = False
     ) -> stats.StatsCollector:
+        
         env.reset()
 
         hcr = stats.HCR(env.num_rounds)
@@ -291,12 +298,16 @@ class Driver:
             agent.clean()
             env.add_agent(agent)
 
+        env.setup()
+
         for _ in tqdm(range(env.num_rounds)):
             env.step()
 
             hcr.add_sample(env.scores, ml_flow_client, run_id, tracked_live)
             avg.add_sample(env.rewards, ml_flow_client, run_id, tracked_live)
             coop.add_sample(env.actions, ml_flow_client, run_id, tracked_live)
+
+        env.complete(run_id)
 
         return stats.StatsCollector(
             metrics={

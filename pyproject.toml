@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 wandb = "^0.15.12"
-langchain = "^0.0.327"
+langchain = "^0.1.11"
 numpy = "^1.26.1"
 matplotlib = "^3.8.1"
 tqdm = "^4.66.1"
@@ -23,6 +23,9 @@ statsmodels = "^0.14.0"
 jupyterlab = "^4.0.7"
 pydantic-settings = "^2.0.3"
 openai = "^0.28.1"
+imageio = "^2.34.0"
+colorcet = "^3.1.0"
+networkx = "^3.2.1"
 
 
 [build-system]
