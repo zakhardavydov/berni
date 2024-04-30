@@ -79,7 +79,7 @@ class BaseGameInvestigator:
 
         variance_analysis_path = os.path.join(self._plot_path, "variance")
         if not os.path.exists(variance_analysis_path):
-            os.path.makedirs(variance_analysis)
+            os.makedirs(variance_analysis_path)
 
         self.round_variance_prompt_structure_viz(flips_sim_df, distance="outcome", prefix=prefix)
         self.round_variance_all_viz(flips_sim_df, distance="outcome", prefix=prefix)
