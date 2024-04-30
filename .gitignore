@@ -167,3 +167,5 @@ mlruns
 llama.cpp/
 
 metrics/
+
+models/

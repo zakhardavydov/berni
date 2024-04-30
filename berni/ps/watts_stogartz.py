@@ -1,18 +1,16 @@
-from nypd.agent import AbsAgent
+import networkx as nx
 
 from .base_graph import BaseGraphPartnerSelection
 
 
-class WattsStogartzPartnerSelection(BaseGraphPartnerSelection):
+class WattsStrogatzPartnerSelection(BaseGraphPartnerSelection):
 
-    def __init__(self, grid_size: int) -> None:
+    def __init__(self, grid_size: int, k: int, beta: float, seed: int) -> None:
+        self._k = k
+        self._beta = beta
+        self._seed_value = seed
+
         super().__init__(grid_size)
 
-    def num_agents(self) -> int:
-        return super().num_agents()
-    
-    def neighbours(self, agent_index: int, depth: int = 1) -> list[int]:
-        return super().neighbours(agent_index, depth)
-    
-    def select(self, prev: list[list[AbsAgent]] | None, round: int, num_agents: int) -> list[list[AbsAgent]]:
-        return super().select(prev, round, num_agents)
+    def init_graph(self):
+        self._G = nx.watts_strogatz_graph(n=self._node_count, k=self._k, p=self._beta, seed=self._seed_value)

@@ -7,7 +7,7 @@ from langchain_community.llms import LlamaCpp
 from berni.utils import llm, BerniLLMConfig
 
 
-model = "/Users/zakdavydov/.cache/lm-studio/models/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+model = "models/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
 
 template = """Question: {question}
 
@@ -21,7 +21,7 @@ n_gpu_layers = -1
 n_batch = 512
 
 config = BerniLLMConfig(model_type="llama", model=model, temp=0)
-used_llm = llm(config)
+used_llm = llm(config, device=0)
 
 llm_chain = LLMChain(prompt=prompt, llm=used_llm)
 question = "What NFL team won the Super Bowl in the year Justin Bieber was born?"

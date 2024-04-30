@@ -12,7 +12,7 @@ from mlflow.store.entities import PagedList
 
 import nypd.stats as stats
 
-from nypd.env import AbsEnv, BaseEnv
+from nypd.environment import AbsEnv, BaseEnv
 from nypd.core import settings
 from nypd.game import game_registry
 from nypd.norms import norm_registry

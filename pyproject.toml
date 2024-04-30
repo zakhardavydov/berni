@@ -26,6 +26,11 @@ openai = "^0.28.1"
 imageio = "^2.34.0"
 colorcet = "^3.1.0"
 networkx = "^3.2.1"
+llama-cpp-python = "^0.2.61"
+langchain-community = "^0.0.33"
+transformers = "^4.39.3"
+torch = "^2.2.2"
+accelerate = "^0.29.2"
 
 
 [build-system]

@@ -1,0 +1,29 @@
+f7_techmonks_big_high_density:
+  game: techmonks
+  prompts:
+  - prompts/techmonks
+  - prompts/techmonks_1
+  results_repo: metrics
+  agent_name: opinion_llm
+  ps:
+    name: random_grid
+  controlled_agent: -1
+  bias_primer:
+  - 0.4
+  - 0.5
+  - 0.6
+  llm:
+    model_type: llama
+    model: ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+    temp: 0
+    max_tokens: 54
+    batch_size: 256
+  grid_size:
+  - 16
+  - 20
+  - 24
+  num_rounds: 20
+  seeds:
+  - 42
+  - 69
+  - 1337

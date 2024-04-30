@@ -2,7 +2,7 @@ from typing import Type, List, Dict, Tuple, Optional
 import numpy as np
 
 from nypd.agent import BaseAgent
-from nypd.env import AbsEnv
+from nypd.environment import AbsEnv
 
 from nypd.strategy import AbsStrategy
 

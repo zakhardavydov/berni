@@ -1,0 +1,92 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    python_version: 3.11.9
+    cli_version: 0.15.12
+    framework: huggingface
+    huggingface_version: 4.39.3
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1713287116.703827
+    t:
+      1:
+      - 1
+      - 5
+      - 11
+      - 49
+      - 51
+      - 53
+      - 55
+      - 71
+      - 84
+      - 98
+      - 105
+      2:
+      - 1
+      - 5
+      - 11
+      - 49
+      - 51
+      - 53
+      - 55
+      - 71
+      - 84
+      - 98
+      - 105
+      3:
+      - 23
+      4: 3.11.9
+      5: 0.15.12
+      6: 4.39.3
+      8:
+      - 5
+      13: linux-x86_64
+trl_ppo_trainer_config:
+  desc: null
+  value:
+    exp_name: ppo_test
+    seed: 0
+    log_with: wandb
+    task_name: null
+    model_name: microsoft/phi-1_5
+    query_dataset: imdb
+    reward_model: sentiment-analysis:lvwerra/distilbert-imdb
+    remove_unused_columns: true
+    tracker_project_name: trl
+    steps: 20000
+    learning_rate: 1.41e-05
+    adap_kl_ctrl: true
+    init_kl_coef: 0.2
+    kl_penalty: kl
+    target: 6
+    horizon: 10000
+    gamma: 1
+    lam: 0.95
+    cliprange: 0.2
+    cliprange_value: 0.2
+    vf_coef: 0.1
+    batch_size: 128
+    forward_batch_size: null
+    mini_batch_size: 128
+    gradient_accumulation_steps: 1
+    world_size: 1
+    ppo_epochs: 4
+    max_grad_norm: null
+    optimize_cuda_cache: null
+    optimize_device_cache: false
+    early_stopping: false
+    target_kl: 1
+    compare_steps: 1
+    ratio_threshold: 10.0
+    use_score_scaling: false
+    use_score_norm: false
+    score_clip: null
+    whiten_rewards: false
+    is_encoder_decoder: false
+    is_peft_model: false
+    backward_batch_size: 128
+    global_backward_batch_size: 128
+    global_batch_size: 128
+    total_ppo_epochs: 157

@@ -17,7 +17,8 @@ llm_call_lock = threading.Lock()
 
 class RiotPromptStrategy(PromptStrategy):
 
-    def __init__(self, llm: BaseLanguageModel, id: str, prompt: str):
+    def __init__(self, llm: BaseLanguageModel, id: str, prompt: str, debate_topic: str):
+        self.debate_topic = debate_topic
         super().__init__(llm, id, prompt)
         
     def base_prompt(self, agent: RiotLLMAgent) -> str:
@@ -27,26 +28,26 @@ class RiotPromptStrategy(PromptStrategy):
         opponent_opinion = opponent.opinion.lower()
         return f"""
             {self.base_prompt(agent)}
-            You are talking with a neighbour.
+            You are talking with a new neighbour.
             They think:
             Quote starts:
             "{opponent_opinion}"
             Quote ends.
-            In one line, do you agree?
-            Clearly state yes/no:
+            [INST]
+            State in one word whether you agree (yes) or disagree (no) with the neighbour and summarise your new opinion.
+            Template for response: "yes/no, opinion"
+            Response:
+            [/INST]
             """
 
-    def play(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> Action:
+    def preplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> str | None:
         prompt = self._prompt_builder(agent, opponent)
         agent.round_prompt = prompt
-        print("-------------")
-        print(prompt)
         if agent.bias_score == opponent.bias_score or agent.opinion == opponent.opinion:
-            return Action.D
-        with llm_call_lock:
-            output = self._llm.predict(prompt)
-        print("-----")
-        print(output)
+            return None
+        return prompt
+    
+    def postplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent, output: str) -> Action:
         output = output.split(",")
         answer = output[0]
         opinion = " ".join(output[1:])
@@ -61,3 +62,11 @@ class RiotPromptStrategy(PromptStrategy):
         except Exception as e:
             print(e)
         return Action.D
+
+    def play(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> Action:
+        prompt = self.preplay(agent, opponent)
+        if not prompt:
+            return Action.D
+        with llm_call_lock:
+            output = self._llm.predict(agent.round_prompt)
+        return self.postplay(agent, opponent, output)

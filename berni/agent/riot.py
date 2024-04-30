@@ -1,4 +1,4 @@
-from nypd.env import BaseEnv
+from nypd.environment import BaseEnv
 from nypd.agent import BaseAgent
 from nypd.strategy import AbsStrategy
 from nypd.agent.registry import agent_registry

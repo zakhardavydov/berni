@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from nypd.agent import AbsAgent, BaseAgent, agent_registry
 from nypd.seed import AbsSeed, NaiveSeed
 from nypd.structures import AgentConfigs
-from nypd.env import AbsEnv
+from nypd.environment import AbsEnv
 
 from .structured import StructuredPartnerSelection
 

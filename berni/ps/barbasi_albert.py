@@ -1,18 +1,15 @@
-from nypd.agent import AbsAgent
+import networkx as nx
 
 from .base_graph import BaseGraphPartnerSelection
 
 
-class BarbasiAlbert(BaseGraphPartnerSelection):
+class BarabasiAlbertPartnerSelection(BaseGraphPartnerSelection):
 
-    def __init__(self, grid_size: int) -> None:
+    def __init__(self, grid_size: int, m: int, seed: int) -> None:
+        self._m = m
+        self._seed_value = seed
+
         super().__init__(grid_size)
 
-    def num_agents(self) -> int:
-        return super().num_agents()
-    
-    def neighbours(self, agent_index: int, depth: int = 1) -> list[int]:
-        return super().neighbours(agent_index, depth)
-    
-    def select(self, prev: list[list[AbsAgent]] | None, round: int, num_agents: int) -> list[list[AbsAgent]]:
-        return super().select(prev, round, num_agents)
+    def init_graph(self):
+        self._G = nx.barabasi_albert_graph(n=self._node_count, m=self._m, seed=self._seed_value)

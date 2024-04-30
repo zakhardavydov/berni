@@ -1,10 +1,12 @@
 import os
 import time
 import json
+import numpy as np
+import threading
 import matplotlib
 import matplotlib.pyplot as plt
 
-from nypd.env import BaseEnv
+from nypd.environment import BaseEnv
 from nypd.game import AbsGame
 from nypd.norms import AbsNorm
 from nypd.ps import AbsPartnerSelection
@@ -15,6 +17,8 @@ from berni.assesment import AgentAssesor
 
 
 matplotlib.use('Agg')
+
+llm_env_call_lock = threading.Lock()
 
 
 class LLMEnv(BaseEnv):
@@ -60,8 +64,105 @@ class LLMEnv(BaseEnv):
                 else:
                     self.flips[bias_gap] = 1
 
+    def _send_batch(self, llm, prompts: list[str]) -> list[str]:
+        with llm_env_call_lock:
+            return llm.batch(prompts)
+
+    def _step(self):
+        self.rounds += 1
+        # Removing structures and rewards of the previous round
+        self.actions = []
+        self.rewards = np.zeros(self.num_agents)
+        self.state = [[] for _ in range(self.num_agents)]
+
+        self.pairs = self.ps.select(self.pairs, 0, self.num_agents)
+        self.prev_round_scores = self.scores.copy()
+
+        agent_prompts = {}
+        
+        for i, j in self.pairs:
+            agent1: AbsAgent = self.agents[i]
+            agent2: AbsAgent = self.agents[j]
+
+            bias_gap = agent2.bias_score - agent1.bias_score
+
+            agent_prompts[i] = agent1.preplay(j)
+            agent_prompts[j] = agent2.preplay(i)
+
+        # Implement smarter batching, looking at agent strategy LLM and only batching to same underlying LLM
+        llm = self.agents[0].strategy._llm
+
+        filtered_prompts = {k: v for k, v in agent_prompts.items() if v is not None}
+
+        responses = self._send_batch(llm, list(filtered_prompts.values()))
+
+        keys = list(filtered_prompts.keys())
+
+        agent_response = {keys[i]: responses[i] for i in range(len(responses))}
+
+        for i, j in self.pairs:
+            agent1: AbsAgent = self.agents[i]
+            agent2: AbsAgent = self.agents[j]
+            
+            if not i in agent_response:
+                act1 = Action.D
+            else:
+                act1 = agent1.postplay(agent_response[i], j)
+
+            if not j in agent_response:
+                act2 = Action.D
+            else:
+                act2 = agent1.postplay(agent_response[j], i)
+
+            payoff = self.game.get_payoff(action=(act1, act2))
+            self.current_payoffs.clear()
+            self.current_payoffs[i] = payoff[0]
+            self.current_payoffs[j] = payoff[1]
+
+            w1 = self.norm.calculate_reward(agent1, agent2)
+            w2 = self.norm.calculate_reward(agent2, agent1)
+
+            r1 = payoff[0] + w1
+            r2 = payoff[1] + w2
+
+            self.actions.append((act1, act2))
+
+            self.state[i].append((j, (act1, act2)))
+            self.state[j].append((i, (act2, act1)))
+
+            self.rewards[i] += r1
+            self.rewards[j] += r2
+
+            agent1.save_history(
+                opponent=j,
+                opponent_model=agent1,
+                action=act1,
+                reward=r1,
+                round=self.rounds,
+                bias_gap=bias_gap
+            )
+            agent2.save_history(
+                opponent=i,
+                opponent_model=agent2,
+                action=act2,
+                reward=r2,
+                round=self.rounds,
+                bias_gap=bias_gap
+            )
+
+        # Updating the agent rewards in their objects
+        for i in range(self.num_agents):
+            self.agents[i].observe(self.rewards[i], self.state[i])
+
+        # Updating total score and checking if the game is done
+        self.scores += self.rewards
+
+        if self.rounds >= self.num_rounds:
+            self.done = True
+
     def step(self):
-        super().step()
+        self._step()
+
         if self._step_assessment:
             for ass in self._step_assessment:
                 for agent in self.agents:
@@ -93,12 +194,13 @@ class LLMEnv(BaseEnv):
             }
         self.bias.append(total_bias)
         self.bias_av.append(total_bias / self.num_agents)
-        save_path = f"{self.results_dir}/matrix"
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        save_path = f"{save_path}/{self.rounds}.json"
-        with open(save_path, "w") as f:
-            json.dump(agent_bias_map, f)
+        if self.results_dir:
+            save_path = f"{self.results_dir}/matrix"
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            save_path = f"{save_path}/{self.rounds}.json"
+            with open(save_path, "w") as f:
+                json.dump(agent_bias_map, f)
 
     def _plot_flips(self, run):
         sorted_keys = sorted(self.flips.keys())
@@ -125,8 +227,10 @@ class LLMEnv(BaseEnv):
 
     def complete(self, run=None):
         super().complete()
+        """
         self._plot_flips(run)
         self._plot_bias(run)
+        """
         if self._complete_assessment:
             for ass in self._complete_assessment:
                 for agent in self.agents:
