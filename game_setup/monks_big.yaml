@@ -3,6 +3,7 @@ f7_techmonks_big_low_density:
   prompts:
   - prompts/techmonks
   - prompts/techmonks_1
+  strategy_name: riot
   results_repo: metrics
   agent_name: opinion_llm
   ps:

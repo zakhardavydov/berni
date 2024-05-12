@@ -41,6 +41,7 @@ def init_llm_simulation(
         used_llm,
         agent_name: str,
         prompt: str,
+        strategy_name: str,
         grid_size: int,
         ps: BerniPSConfig,
         controlled_agent: int,
@@ -48,10 +49,13 @@ def init_llm_simulation(
         num_rounds: int
 ) -> LLMEnv:
     
+    picked_agent_constructor = agent_registry.registry[agent_name]
+    agent_prompt_strategy = registry[agent_name][strategy_name]
+    
     active_ps = None
+    active_ps_params = ps.params if ps.params else {}
     if ps.name == "random_grid":
-        params = ps.params if ps.params else {}
-        active_ps = RandomGridPartnerSelection(grid_size=grid_size, **params)
+        active_ps = RandomGridPartnerSelection(grid_size=grid_size, **active_ps_params)
         
     assert active_ps, "Selected partner selection failed to parse"
     
@@ -70,12 +74,11 @@ def init_llm_simulation(
         rule_prompt_path=os.path.join(prompt, settings.RULES_PROMPT_PATH),
         debate_topic_path=os.path.join(prompt, settings.DEBATE_TOPIC_PATH),
         bias_scores=bias_scores,
-        default_agent_type=agent_name
+        default_agent_type=agent_name,
+        strategy_constructor=agent_prompt_strategy
     )
 
     agent_config, strategy = generator.generate(ratio_override=ratio_override)
-    
-    picked_agent_constructor = agent_registry.registry[agent_name]
 
     generator.register_strategy(registry, [(picked_agent_constructor, s) for s in strategy])
 

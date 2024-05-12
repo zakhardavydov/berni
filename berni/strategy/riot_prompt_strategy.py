@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from langchain.llms.base import BaseLanguageModel
 from langchain.output_parsers import PydanticOutputParser
 
-from nypd.strategy import AbsStrategy
+from nypd.strategy import AbsStrategy, registry
 from nypd.structures import Action
 
 from berni.agent import LLMAgent, RiotLLMAgent
@@ -16,6 +16,8 @@ llm_call_lock = threading.Lock()
 
 
 class RiotPromptStrategy(PromptStrategy):
+
+    name = "riot"
 
     def __init__(self, llm: BaseLanguageModel, id: str, prompt: str, debate_topic: str):
         self.debate_topic = debate_topic
@@ -70,3 +72,6 @@ class RiotPromptStrategy(PromptStrategy):
         with llm_call_lock:
             output = self._llm.predict(agent.round_prompt)
         return self.postplay(agent, opponent, output)
+
+
+registry.add(RiotLLMAgent, RiotPromptStrategy)

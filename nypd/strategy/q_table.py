@@ -51,5 +51,5 @@ class QTableTrackOppo(AbsStrategy):
         return action
 
 
-registry.add(QLAgent, QTable)
+# registry.add(QLAgent, QTable)
 # registry.add(QLAgentTrackOppon, QTableTrackOppo) # WIP

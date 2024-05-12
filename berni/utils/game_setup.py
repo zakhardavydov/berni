@@ -16,6 +16,7 @@ class BerniGameSetup(BaseModel):
     ps: BerniPSConfig
     results_repo: str
     agent_name: str
+    strategy_name: str
     bias_primer: list[float]
     llm: BerniLLMConfig
     grid_size: list[int]

@@ -20,7 +20,7 @@ class StrategyRegistry:
     def add(self, agent_type: Type[BaseAgent], strategy: Type[AbsStrategy]):
         if agent_type.name not in self.registry:
             self.registry[agent_type.name] = {}
-        self.registry[agent_type.name][strategy.id] = strategy
+        self.registry[agent_type.name][strategy.name] = strategy
 
 
 registry = StrategyRegistry()

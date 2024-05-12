@@ -1,0 +1,5 @@
+agent,radical
+local, 0.5
+federal,1
+state,0.75
+community, -1

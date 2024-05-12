@@ -1,8 +1,10 @@
+from typing import Type
+
 from langchain.llms.base import BaseLanguageModel
 
 from nypd.structures import AgentConfigs, AgentConfigPrePlay, AgentConfig
 
-from berni.strategy import PromptStrategy, RiotPromptStrategy
+from berni.strategy import PromptStrategy
 
 from .abs import AbsSwarmGenerator
 
@@ -16,6 +18,7 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
             strategy_prompt_dir: str,
             rule_prompt_path: str,
             debate_topic_path: str,
+            strategy_constructor: Type[PromptStrategy],
             default_agent_type: str = "llm",
             bias_scores: dict[str, float] | None = None
     ):
@@ -28,6 +31,8 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
         self.rules_prompt = self.get_prompt(rule_prompt_path)
         self.debate_topic = self.get_prompt(debate_topic_path)
 
+        self._strategy_constructor = strategy_constructor
+
     def get_agent_ratio(self) -> dict[str, float]:
         return {
             agent_name: 1 / len(self.agents) for agent_name in self.agents.keys()
@@ -38,13 +43,13 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
             strategy_name: 1 / len(self.strategies) for strategy_name in self.strategies.keys()
         }
 
-    def _init_strategy(self) -> list[RiotPromptStrategy]:
+    def _init_strategy(self) -> list[PromptStrategy]:
         return [
-            RiotPromptStrategy(llm=self._llm, id=strategy_name, prompt=prompt, debate_topic=self.debate_topic)
+            self._strategy_constructor(llm=self._llm, id=strategy_name, prompt=prompt, debate_topic=self.debate_topic)
             for strategy_name, prompt in self.strategies.items()
         ]
 
-    def generate(self, ratio_override: dict[float, float] | None = None, *args, **kwargs) -> tuple[AgentConfigs, list[RiotPromptStrategy]]:
+    def generate(self, ratio_override: dict[float, float] | None = None, *args, **kwargs) -> tuple[AgentConfigs, list[PromptStrategy]]:
         ratio = self.get_agent_ratio()
         strategy = self._init_strategy()
         configs = []

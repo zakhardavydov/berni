@@ -6,6 +6,7 @@ if __name__ == "__main__":
     parser = parse_args()
 
     parser.add_argument("prompt", default="prompts/techmonks")
+    parser.add_argument("strategy_name", default="riot")
 
     args = parser.parse_args()
 
@@ -20,6 +21,7 @@ if __name__ == "__main__":
         used_llm,
         "opinion_llm",
         args.prompt,
+        args.strategy_name,
         config.grid_size[0],
         ps=config.ps,
         controlled_agent=-1,

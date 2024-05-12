@@ -1,5 +1,6 @@
 f7_techmonks_big_high_density:
   game: techmonks
+  strategy_name: riot
   prompts:
   - prompts/techmonks
   - prompts/techmonks_1

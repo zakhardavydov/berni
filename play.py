@@ -38,6 +38,7 @@ def run_simulation(
         used_llm,
         setup.agent_name,
         prompt,
+        setup.strategy_name,
         grid_size,
         setup.ps,
         setup.controlled_agent,

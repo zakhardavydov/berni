@@ -10,6 +10,8 @@ from berni.agent import LLMAgent
 
 class PromptStrategy(AbsStrategy):
 
+    name = "prompt"
+
     def __init__(self, llm: BaseLanguageModel, id: str, prompt: str):
         self.id = id
 
