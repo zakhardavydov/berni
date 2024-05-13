@@ -1,6 +1,7 @@
 import os
 import ast
 import json
+import hdbscan
 import numpy as np
 import pandas as pd
 import colorcet as cc
@@ -9,9 +10,11 @@ import seaborn as sns
 import seaborn.objects as so
 import matplotlib.pyplot as plt
 
+
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial.distance import cdist
 
 import torch
 import torch.nn.functional as F
@@ -30,7 +33,11 @@ class BaseGameInvestigator:
             opinion_embeddings_model: str = "thenlper/gte-large",
             plot_experiment_override: bool = True,
             plot_dir: str = "plots",
-            seed: int = 42
+            seed: int = 42,
+            max_round: int | None = None,
+            track_round_prompt: bool = False,
+            run_elbow: bool = False,
+            run_flips_on_initial_bias: bool = False
     ) -> None:
 
         if not opinion_group_range:
@@ -56,6 +63,9 @@ class BaseGameInvestigator:
         
         self._opinion_embeddings_model = opinion_embeddings_model
         self._seed = seed
+
+        self._max_round = max_round
+        self._track_round_prompt = track_round_prompt
         
         self.opinion_index = None
         self.reverse_opinion_index = None
@@ -63,35 +73,39 @@ class BaseGameInvestigator:
         self.opinion_vector_index = None
         self.opinion_vector_cluster_index = None
 
-    def process_prefix(self, optimized_df: pd.DataFrame, prefix: str, override: bool = False):
+        self._run_elbow = run_elbow
+        self._run_flips_on_initial_bias = run_flips_on_initial_bias
+
+    def process_prefix(self, optimized_df: pd.DataFrame, prefix: str, override: bool = False, run_flips: bool = True):
         optimized_df = optimized_df.copy()
 
         ratio_df = self.calculate_ratio(optimized_df)
 
         self.opinion_dynamics_viz(ratio_df, prefix)
         self.plot_ratio_grid(ratio_df, prefix)
+        
+        if run_flips:
+            flips_df = self.flips_df(optimized_df, override_cache=override)
+            self.flips_bar_viz(flips_df, prefix=prefix)
 
-        flips_df = self.flips_df(optimized_df, override_cache=override)
-        self.flips_bar_viz(flips_df, prefix=prefix)
+            flips_sim_df = self.flips_similarity(optimized_df, override_cache=override)
+            self.flips_similarity_viz(flips_sim_df, prefix=prefix)
 
-        flips_sim_df = self.flips_similarity(optimized_df, override_cache=override)
-        self.flips_similarity_viz(flips_sim_df, prefix=prefix)
+            variance_analysis_path = os.path.join(self._plot_path, "variance")
+            if not os.path.exists(variance_analysis_path):
+                os.makedirs(variance_analysis_path)
 
-        variance_analysis_path = os.path.join(self._plot_path, "variance")
-        if not os.path.exists(variance_analysis_path):
-            os.makedirs(variance_analysis_path)
+            self.round_variance_prompt_structure_viz(flips_sim_df, distance="outcome", prefix=prefix)
+            self.round_variance_all_viz(flips_sim_df, distance="outcome", prefix=prefix)
+            self.round_variance_all_viz(flips_sim_df, distance="outcome", is_bar=True, prefix=prefix)
+            self.round_variance_prompt_structure_viz(flips_sim_df, distance="opponent", prefix=prefix)
+            self.round_variance_all_viz(flips_sim_df, distance="opponent", prefix=prefix)
+            self.round_variance_all_viz(flips_sim_df, distance="opponent", is_bar=True, prefix=prefix)
 
-        self.round_variance_prompt_structure_viz(flips_sim_df, distance="outcome", prefix=prefix)
-        self.round_variance_all_viz(flips_sim_df, distance="outcome", prefix=prefix)
-        self.round_variance_all_viz(flips_sim_df, distance="outcome", is_bar=True, prefix=prefix)
-        self.round_variance_prompt_structure_viz(flips_sim_df, distance="opponent", prefix=prefix)
-        self.round_variance_all_viz(flips_sim_df, distance="opponent", prefix=prefix)
-        self.round_variance_all_viz(flips_sim_df, distance="opponent", is_bar=True, prefix=prefix)
-
-    def process(self, override: bool = False) -> pd.DataFrame:
+    def process(self, override: bool = False, clustering_method: str = "kmeans", kmeans_clusters: int = 3, max_k: int = 8) -> pd.DataFrame:
         optimized_df = self.get_optimized_opinion_df(override)
-        self.all_opinion_vector_viz(optimized_df)
-        self.process_prefix(optimized_df, prefix="bias_dynamics")
+        self.all_opinion_vector_viz(optimized_df, clustering_method, kmeans_clusters, max_k=max_k)
+        self.process_prefix(optimized_df, prefix="bias_dynamics", run_flips=self._run_flips_on_initial_bias)
         cluster_substituted_df = self.substitute_bias_score_on_cluster(optimized_df)
         self.process_prefix(cluster_substituted_df, prefix="cluster_dynamics")
         return optimized_df
@@ -102,15 +116,22 @@ class BaseGameInvestigator:
         )
         df = df.astype({"outcome_opinion": int, "my_prev_opinion": int, "my_opponent_prev_opinion": int})
 
-        print(len(self.opinion_vector_cluster_index))
-        print(len(df["outcome_opinion"].unique()))
+        unique_prompts = df["prompt_structure"].unique()
 
         def map_to_cluster(df: pd.DataFrame, source_col: str, target_col: str):
 
             def row_mapper(row):
-                row[target_col] = self.opinion_vector_cluster_index[f"{row['prompt_structure']}__{row[source_col]}"]
-                return row
-            
+                try:
+                    row[target_col] = self.opinion_vector_cluster_index[f"{row['prompt_structure']}__{row[source_col]}"]
+                    return row
+                except Exception as e:
+                    for unique_prompt in unique_prompts:
+                        key = f"{unique_prompt}__{row[source_col]}"
+                        if key in self.opinion_vector_cluster_index:
+                            row[key] = self.opinion_vector_cluster_index[key]
+                            return row
+                    return row
+                
             return df.apply(row_mapper, axis=1)
         
         df = map_to_cluster(df, "outcome_opinion", "bias_score")
@@ -144,10 +165,19 @@ class BaseGameInvestigator:
         return combined_df
     
     def opinion_dynamics_viz(self, df: pd.DataFrame, prefix: str):
+        noise = np.random.normal(0, 0.3, size=len(df)) + df['bias_av']
+        df['bias_av_noisy'] = df['bias_av'] + noise
+
+        df['std_dev'] = df['bias_av_noisy'].std()
+
         palette = sns.color_palette("viridis")
         sns.set_theme(style="darkgrid")
-        g = sns.FacetGrid(df, row="prompt_structure", col="grid_size", palette=palette)
-        g.map_dataframe(sns.lineplot, x='round', y='bias_av', hue=self._og, estimator='mean', ci='sd', palette=palette)
+        g = sns.FacetGrid(df, row="grid_size", col="prompt_structure", palette=palette)
+        g.map_dataframe(sns.lineplot, x='round', y='bias_av_noisy', hue=self._og, estimator='mean', ci='sd', palette=palette)
+        for ax in g.axes.flat:
+            for line in range(len(df['grid_size'].unique())):
+                ax.errorbar(df[df['grid_size'] == line]['round'], df[df['grid_size'] == line]['bias_av_noisy'],
+                            yerr=df[df['grid_size'] == line]['std_dev'], fmt='none', capsize=3, color="gray")
         g.add_legend()
         g.set_titles(row_template='{row_name}', col_template='{col_name}', fontsize=8)
         g.set_axis_labels('Round', 'Average Bias')
@@ -291,6 +321,9 @@ class BaseGameInvestigator:
                 file_path = os.path.join(sim_path, filename)
                 round_number = int(filename.split('.')[0])
 
+                if self._max_round and round_number > self._max_round:
+                    continue
+
                 with open(file_path, 'r') as file:
                     data = json.load(file)
 
@@ -299,17 +332,21 @@ class BaseGameInvestigator:
                         agent_data["agent_id"] = int(agent_id)
                         agent_data["round"] = round_number
                         if prev:
+                            tracked_col = "round_prompt" if self._track_round_prompt else "outcome_opinion"
                             opponent_id = agent_data["round_neighbours"][0]
                             
                             opponent_bias_before_round = prev[str(opponent_id)]["bias_score"]
-                            my_prev_opinion = prev[agent_id]["outcome_opinion"]
+                            my_prev_opinion = prev[agent_id][tracked_col]
                             my_prev_bias_score = prev[agent_id]["bias_score"]
-                            my_opponent_prev_opinion = prev[str(opponent_id)]["outcome_opinion"]
+                            my_opponent_prev_opinion = prev[str(opponent_id)][tracked_col]
 
                             agent_data["opponent_bias_before_round"] = opponent_bias_before_round
                             agent_data["my_prev_opinion"] = my_prev_opinion
                             agent_data["my_prev_bias_score"] = my_prev_bias_score
                             agent_data["my_opponent_prev_opinion"] = my_opponent_prev_opinion
+
+                            if self._track_round_prompt:
+                                agent_data["outcome_opinion"] = agent_data["round_prompt"]
                             
                         agent_rows.append(agent_data)
                         
@@ -354,11 +391,11 @@ class BaseGameInvestigator:
 
         result_df = pd.concat(proportions_list).reset_index(drop=True)
 
-        weighted_averages = result_df.groupby(['prompt_structure', 'grid_size', 'opinion_group__-1', 'round']).apply(
+        weighted_averages = result_df.groupby(['prompt_structure', 'grid_size', self._og, 'round']).apply(
             lambda x: (x['bias_score'] * x['bias_ratio']).sum() / x['bias_ratio'].sum()
         ).reset_index(name='bias_av')
 
-        result_df = pd.merge(result_df, weighted_averages, on=['prompt_structure', 'grid_size', 'opinion_group__-1', 'round'])
+        result_df = pd.merge(result_df, weighted_averages, on=['prompt_structure', 'grid_size', self._og, 'round'])
 
         return result_df
 
@@ -369,7 +406,6 @@ class BaseGameInvestigator:
             return pd.read_csv(full_agent_results_path)
         
         full_results = []
-        ratio_results = []
 
         for idx, group in self._df.groupby(["batch_id", "grid_size", "prompt_structure", self._og]):
             batch_id, grid_size, prompt_structure, opinion_group = idx
@@ -398,7 +434,7 @@ class BaseGameInvestigator:
         return full_results_df
         
     def plot_ratio_grid(self, df: pd.DataFrame, prefix):
-        df = df.groupby(['bias_score', 'round', 'prompt_structure', 'opinion_group__-1'])['bias_ratio'].mean().reset_index()
+        df = df.groupby(['bias_score', 'round', 'prompt_structure', self._og])['bias_ratio'].mean().reset_index()
 
         p = so.Plot(data=df, x="round", y="bias_ratio", color="bias_score")
         p = p.add(so.Area(alpha=.7), so.Stack())
@@ -473,10 +509,10 @@ class BaseGameInvestigator:
     def flips_similarity_viz(self, df: pd.DataFrame, prefix: str, bins=25):
 
         def create_heatmap_data(df):
-            filtered_df = df[(df['opponent_similarity'] >= 0.75) & (df['outcome_similarity'] >= 0.75)]
+            filtered_df = df[(df['opponent_similarity'] >= 0.5) & (df['outcome_similarity'] >= 0.5)]
             heatmap_data, x_edges, y_edges = np.histogram2d(
                 filtered_df['opponent_similarity'], filtered_df['outcome_similarity'],
-                bins=bins, range=[[0.75, 1], [0.75, 1]]
+                bins=bins, range=[[0.5, 1], [0.5, 1]]
             )
             heatmap_df = pd.DataFrame(heatmap_data)
             heatmap_df.columns = [f"{round(y_edges[j], 2)}-{round(y_edges[j+1], 2)}" for j in range(len(y_edges)-1)]
@@ -591,20 +627,56 @@ class BaseGameInvestigator:
         plt.tight_layout()
 
         plt.savefig(os.path.join(self._plot_path, f"{prefix}_flips.png"))
+        
+    def elbow_kmeans(self, prompt, embeddings, max_k):
 
-    def all_opinion_vector_viz(self, agent_vector_df: pd.DataFrame, n: int = 3):
+        distortion_path = os.path.join(self._plot_path, f"elbow_distortion__{prompt}.png")
+        inertia_path = os.path.join(self._plot_path, f"elbow_inertia__{prompt}.png")
+
+        distortions = []
+        inertias = []
+        mapping1 = {}
+        mapping2 = {}
+        K = range(1, max_k)
+        
+        for k in K:
+            kmeanModel = KMeans(n_clusters=k).fit(embeddings)
+            kmeanModel.fit(embeddings)
+        
+            distortions.append(sum(np.min(cdist(embeddings, kmeanModel.cluster_centers_,
+                                                'euclidean'), axis=1)) / embeddings.shape[0])
+            inertias.append(kmeanModel.inertia_)
+        
+            mapping1[k] = sum(np.min(cdist(embeddings, kmeanModel.cluster_centers_,
+                                        'euclidean'), axis=1)) / embeddings.shape[0]
+            mapping2[k] = kmeanModel.inertia_
+
+        plt.plot(K, distortions, 'bx-')
+        plt.xlabel('Values of K')
+        plt.ylabel('Distortion')
+        plt.title('The Elbow Method using Distortion')
+        plt.savefig(distortion_path)
+
+        plt.plot(K, inertias, 'bx-')
+        plt.xlabel('Values of K')
+        plt.ylabel('Inertia')
+        plt.title('The Elbow Method using Inertia')
+        plt.savefig(inertia_path)
+
+    def all_opinion_vector_viz(self, agent_vector_df: pd.DataFrame, clustering_method: str = "hdbscan", n: int = 3, max_k: int = 8):
         agent_vector_df = agent_vector_df.dropna(subset=["outcome_opinion", "my_prev_opinion", "my_opponent_prev_opinion"])
         agent_vector_df = self.uncomress_vector_index(agent_vector_df)
 
-        print("UNIQUEQ")
+        print("UNIQUE")
         print(len(agent_vector_df["outcome_opinion"].unique()))
 
         self.opinion_vector_cluster_index = {}
 
         for prompt in agent_vector_df['prompt_structure'].unique():
-            tsne_path = os.path.join(self._plot_path, f"all_opinion_embeddings_{prompt.replace('/', '_')}.png")
-            tsne_kmeans_path = os.path.join(self._plot_path, f"all_opinion_embeddings_{n}_clusters_{prompt.replace('/', '_')}.png")
-            tsne_bias_score = os.path.join(self._plot_path, f"all_opinion_embeddings_{n}_bias_score_{prompt.replace('/', '_')}.png")
+            prompt_cleaned = prompt.replace('/', '_')
+            tsne_path = os.path.join(self._plot_path, f"all_opinion_embeddings_{prompt_cleaned}.png")
+            tsne_kmeans_path = os.path.join(self._plot_path, f"all_opinion_embeddings_{n}_clusters_{prompt_cleaned}.png")
+            tsne_bias_score = os.path.join(self._plot_path, f"all_opinion_embeddings_{n}_bias_score_{prompt_cleaned}.png")
 
             current_df = agent_vector_df[agent_vector_df['prompt_structure'] == prompt]
 
@@ -614,14 +686,23 @@ class BaseGameInvestigator:
             unique_embeddings = np.array(unique_df['tuple_vector'].apply(list).tolist())
 
             n = len(self._unique_bias) if self._unique_bias else n
+            
+            print(len(unique_embeddings))
 
-            kmeans = KMeans(n_clusters=n, random_state=self._seed)
-            unique_df['cluster'] = kmeans.fit_predict(unique_embeddings)
+            if clustering_method == "kmeans":
+                if self._run_elbow:
+                    self.elbow_kmeans(prompt_cleaned, unique_embeddings, max_k)
+                kmeans = KMeans(n_clusters=n, random_state=self._seed)
+                unique_df['cluster'] = kmeans.fit_predict(unique_embeddings)
+            elif clustering_method == "hdbscan":
+                clusterer = hdbscan.HDBSCAN(metric='euclidean')
+                clusterer.fit(unique_embeddings)
+                unique_df['cluster'] = clusterer.labels_
 
             for i, row in unique_df.iterrows():
-                self.opinion_vector_cluster_index[f"{prompt}__{int(row['outcome_opinion'])}"] = row["cluster"] + int(self._party)
+                self.opinion_vector_cluster_index[f"{prompt}__{int(row['outcome_opinion'])}"] = row["cluster"] + float((self._party))
 
-            tsne = TSNE(n_components=2, random_state=self._seed)
+            tsne = TSNE(n_components=2, random_state=self._seed, perplexity=3)
             unique_embeddings_2d = tsne.fit_transform(unique_embeddings)
 
             plt.figure(figsize=(10, 8))
@@ -672,4 +753,3 @@ class BaseGameInvestigator:
             plt.legend(title='Bias score')
             plt.savefig(tsne_bias_score)
             plt.close()
-

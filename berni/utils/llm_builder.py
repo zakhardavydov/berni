@@ -11,6 +11,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import LlamaCpp
+from langchain_openai import OpenAI
 
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
@@ -71,6 +72,6 @@ def llm(config: BerniLLMConfig, device: int) -> BaseLanguageModel | None:
         llm = HuggingFacePipeline(pipeline=pipe, batch_size=config.batch_size)
 
     elif config.model_type == "openai":
-        llm = ChatOpenAI(openai_api_key=settings.OPENAI_API_KEY, model_name=config.model, temperature=config.temp, **config)
+        llm = OpenAI(openai_api_key=settings.OPENAI_API_KEY, model_name=config.model, temperature=config.temp, max_tokens=config.max_tokens)
         
     return llm

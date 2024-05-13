@@ -27,24 +27,20 @@ class CrisisPromptStrategy(PromptStrategy):
         return f"{agent.rules_prompt}\n{agent.opinion}."
 
     def _prompt_builder(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> str:
-        opponent_action = opponent.round_prompt.lower()
-        if opponent_action:
+        if opponent.round_prompt:
+            opponent_action = opponent.round_prompt.lower()
             return f"""
                 {self.base_prompt(agent)}
                 You are dealing with a request to support a new action.
                 "{opponent_action}"
-                [INST]
-                State in one word whether you support the action (yes) or decline (no). Next, state your next action.
+                State in one word whether you support the action (yes) or decline (no). Be critical. Next, state your next action.
                 Template for response: "yes/no; action"
                 Response:
-                [/INST]
                 """
         return f"""
             {self.base_prompt(agent)}
-            [INST]
             You are acting to address the crisis.
             In one sentence, state your next response action:
-            [/INST]
             """
 
     def preplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> str | None:
@@ -52,13 +48,13 @@ class CrisisPromptStrategy(PromptStrategy):
         return prompt
     
     def postplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent, output: str) -> Action:
-        output = output.split(";")
-        if output:
-            is_cooperate = "yes" in output[0].lower()
+        splitted = output.split(";")
+        if len(splitted) > 1:
+            is_cooperate = "yes" in splitted[0].lower()
             if is_cooperate:
                 agent.bias_score = (agent.bias_score + opponent.bias_score) / 2
                 return Action.C
-            agent.round_prompt = output
+            agent.round_prompt = splitted[1]
             return Action.D
         agent.round_prompt = output
         return Action.D

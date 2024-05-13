@@ -34,7 +34,7 @@ def run_simulation(
     internal_sim_id = str(uuid.uuid4())
     report_dir = os.path.join(save_dir, batch_id)
 
-    agent_config, env = init_llm_simulation(
+    agent_config, env, topology = init_llm_simulation(
         used_llm,
         setup.agent_name,
         prompt,
@@ -43,7 +43,8 @@ def run_simulation(
         setup.ps,
         setup.controlled_agent,
         controlled_target_bias,
-        setup.num_rounds
+        setup.num_rounds,
+        seed
     )
     env.results_dir = os.path.join(report_dir, internal_sim_id)
 
@@ -92,6 +93,7 @@ def run_simulation(
 
 def run_simulations(setup_path: str, run_one: bool = False, device: int = 0):
     setups = load_setups(setup_path)
+    print(f"STARTING EXPERIMENT WITH {len(setups)} SETUPS")
     for setup in setups:
         used_llm = llm(setup.llm, device)
         threads = []
@@ -100,11 +102,13 @@ def run_simulations(setup_path: str, run_one: bool = False, device: int = 0):
         grid_options = setup.grid_size
         if grid_options and run_one:
             grid_options = [next(iter(grid_options), grid_options)]
+        print(f"SETUP {setup.setup_name} HAS {len(grid_options)} GRID OPTIONS ({grid_options})")
         for size in grid_options:
             internal_batch_id = str(uuid.uuid4())
-            combinations = itertools.product(setup.prompts, setup.bias_primer, setup.seeds)
+            combinations = list(itertools.product(setup.prompts, setup.bias_primer, setup.seeds))
+            print(f"SETUP {setup.setup_name} | SIZE {size} HAS {len(combinations)} SIMULATION COMBINATIONS")
             if combinations and run_one:
-                combinations = [next(combinations, combinations)]
+                combinations = [combinations[0]]
             for prompt, bias, seed in combinations:
                 t = threading.Thread(target=run_simulation, args=(
                     experiment_id,
@@ -129,8 +133,7 @@ def run_simulations(setup_path: str, run_one: bool = False, device: int = 0):
 
 if __name__ == "__main__":
     parser = parse_args()
-    parser.add_argument("device")
 
     args = parser.parse_args()
 
-    run_simulations(args.path, device=args.device)
+    run_simulations(args.path, device=0)

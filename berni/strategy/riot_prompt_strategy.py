@@ -30,16 +30,13 @@ class RiotPromptStrategy(PromptStrategy):
         opponent_opinion = opponent.opinion.lower()
         return f"""
             {self.base_prompt(agent)}
-            You are talking with a new neighbour.
-            They think:
+            You are debating with a neighbour. One of you is wrong.
+            They just said:
             Quote starts:
             "{opponent_opinion}"
             Quote ends.
-            [INST]
-            State in one word whether you agree (yes) or disagree (no) with the neighbour and summarise your new opinion.
-            Template for response: "yes/no, opinion"
-            Response:
-            [/INST]
+
+            Respond:
             """
 
     def preplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> str | None:
@@ -50,20 +47,9 @@ class RiotPromptStrategy(PromptStrategy):
         return prompt
     
     def postplay(self, agent: RiotLLMAgent, opponent: RiotLLMAgent, output: str) -> Action:
-        output = output.split(",")
-        answer = output[0]
-        opinion = " ".join(output[1:])
-        try:
-            if "no" in answer.lower():
-                return Action.D
-            agent.opinion = opinion
-            if agent.opinion == "":
-                agent.opinion = opponent.opinion
-            agent.bias_score = opponent.bias_score
-            return Action.C
-        except Exception as e:
-            print(e)
-        return Action.D
+        print(output)
+        agent.opinion = output
+        return Action.C
 
     def play(self, agent: RiotLLMAgent, opponent: RiotLLMAgent) -> Action:
         prompt = self.preplay(agent, opponent)

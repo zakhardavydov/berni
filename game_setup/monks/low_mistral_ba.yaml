@@ -1,0 +1,30 @@
+f8_techmonks_ba_low_density_mistral:
+  game: techmonks
+  prompts:
+  - prompts/techmonks
+  - prompts/techmonks_1
+  strategy_name: riot
+  results_repo: metrics
+  agent_name: opinion_llm
+  ps:
+    name: barbasi_albert
+    params:
+      m: 16
+  controlled_agent: -1
+  bias_primer:
+  - 0.3
+  llm:
+    model_type: llama
+    model: ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+    temp: 0.0
+    max_tokens: 100
+    batch_size: 256
+  grid_size:
+  - 8
+  num_rounds: 20
+  seeds:
+  - 42
+  - 69
+  - 100
+  - 150
+  - 1337

@@ -1,0 +1,27 @@
+f9_crisishero_default_mistral:
+  game: crisishero
+  prompts:
+  - prompts/crisishero_flint
+  - prompts/crisishero_katrina
+  strategy_name: crisis
+  results_repo: metrics
+  agent_name: opinion_llm
+  ps:
+    name: random_grid
+  controlled_agent: -1
+  bias_primer:
+  - 0.4
+  - 0.8
+  llm:
+    model_type: llama
+    model: ./models/Meta-Llama-3-8B-Instruct.Q4_K_M.gguf
+    temp: 0.4
+    max_tokens: 100
+    batch_size: 256
+  grid_size:
+  - 8
+  num_rounds: 10
+  seeds:
+  - 42
+  - 69
+  - 1337

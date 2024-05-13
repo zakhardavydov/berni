@@ -50,7 +50,7 @@ class BaseGraphPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
         visited.discard(agent_index)
         return list(visited)
 
-    def seed(self, env: AbsEnv, agents: AgentConfigs) -> tuple[list[BaseAgent], dict[str, float]]:
+    def seed(self, registry, env: AbsEnv, agents: AgentConfigs) -> tuple[list[BaseAgent], dict[str, float]]:
         agent_probabilities = [config.ratio for config in agents.configs]
 
         strategy_count = {}
@@ -64,7 +64,7 @@ class BaseGraphPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
 
             constructor = agent_registry.registry[agent_config.config.type]
 
-            strategy, strategy_id = NaiveSeed.pick_strategy(agent_config.config, constructor)
+            strategy, strategy_id = NaiveSeed.pick_strategy(registry, agent_config.config, constructor)
 
             agent = constructor(env=env, id=node, strategy=strategy, **agent_config.config.params)
             
@@ -85,7 +85,8 @@ class BaseGraphPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
     def select(self, prev: list[list[AbsAgent]] | None, round: int, num_agents: int) -> list[tuple[AbsAgent, list[AbsAgent]]]:
         matched = {}
         for agent_index in range(num_agents):
-            matched[agent_index] = self.neighbours(agent_index)
+            neihbours = self.neighbours(agent_index)
+            matched[agent_index] = random.choice(neihbours)
         out = [(src, targets) for src, targets in matched.items()]
         return out
 

@@ -1,5 +1,7 @@
 # BERNI
 
+Framework for modelling agent-based societies that evolve with text interactions
+
 ## Get started
 
 ### Using ``poetry`` 
@@ -14,26 +16,19 @@ Run a shell in the project's environment:
 poetry shell
 ```
 
-Run `main.py` to test the setup:
+Run `play.py` to test the simulation:
 ```bash
-python play.py
+python play.py game_setup/monks/low_mistral.yaml
 ```
 
-### MLFlow config (Set up local server)
-``Optional if using non-local server``
+Run `dig.py` to generate experiment vizualization
 
-Start MLFlow
 ```bash
-docker-compose -f docker-compose.mlflow.yaml up
+python dig.py metrics/<experiment_id> -1
 ```
 
-### Configure .env file
-When first time cloning the repository, create a ``.env`` file under ``Group_Research_Project_G10``, add belowing content to the file. Then,
-``replace`` all ``$...$`` part with your MLflow server setting
-```
-ML_FLOW_URL=$YOUR ML_FLOW SERVER URL$
-AWS_ACCESS_KEY_ID=$YOUR AWS_ACCESS_KEY_ID$
-AWS_SECRET_ACCESS_KEY=$YOUR AWS_SECRET_ACCESS_KEY$
-MLFLOW_S3_ENDPOINT_URL=$YOUR S3_ENDPOINT_URL$
-CURRENT_USER_DIR=$YOUR USER DIRECTORY
+If the simulation has terminated pre-limenary, run `fix_incomplete.py` to generate statistics from raw text log.
+
+```bash
+python fix_incomplete.py metrics/<experiment_id>
 ```

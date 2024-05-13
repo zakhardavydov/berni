@@ -17,7 +17,7 @@ from .abs import AbsSeed
 class NaiveSeed(AbsSeed):
 
     @staticmethod
-    def __pick_strategy(agent_type: Type[BaseAgent], allowed_strategy: Optional[Dict[str, float]] = None):
+    def __pick_strategy(registry, agent_type: Type[BaseAgent], allowed_strategy: Optional[Dict[str, float]] = None):
 
         if allowed_strategy:
             picked = np.random.choice(
@@ -45,14 +45,14 @@ class NaiveSeed(AbsSeed):
         return st_count
     
     @staticmethod
-    def pick_strategy(picked_config: AgentConfig, constructor: Type[BaseAgent]):
+    def pick_strategy(registry, picked_config: AgentConfig, constructor: Type[BaseAgent]):
         if isinstance(picked_config.strategy, Dict):
-            st_id, st = NaiveSeed.__pick_strategy(constructor, picked_config.strategy)
+            st_id, st = NaiveSeed.__pick_strategy(registry, constructor, picked_config.strategy)
         elif isinstance(picked_config.strategy, str):
             st_id = picked_config.strategy
             st = registry.registry[constructor][st_id]
         else:
-            st_id, st = NaiveSeed.__pick_strategy(constructor, None)
+            st_id, st = NaiveSeed.__pick_strategy(registry, constructor, None)
 
         if isinstance(st, AbsStrategy):
             strategy = st
@@ -62,6 +62,7 @@ class NaiveSeed(AbsSeed):
 
     def seed(
             self,
+            registry,
             env: AbsEnv,
             agents: AgentConfigs,
             count: int,
@@ -81,7 +82,7 @@ class NaiveSeed(AbsSeed):
 
             constructor = agent_registry.registry[picked_config.type]
 
-            strategy, st_id = self.pick_strategy(picked_config, constructor)
+            strategy, st_id = self.pick_strategy(registry, picked_config, constructor)
 
             created = constructor(
                 env=env,

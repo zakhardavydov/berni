@@ -6,7 +6,7 @@ from .base_grid import BaseGridPartnerSelection
 
 class RandomGridPartnerSelection(BaseGridPartnerSelection):
 
-    def __init__(self, grid_size: int) -> None:
+    def __init__(self, grid_size: int, seed: int) -> None:
         super().__init__(grid_size=grid_size)
 
     def _select(self, agent_index: int) -> int:

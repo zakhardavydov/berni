@@ -16,10 +16,12 @@ if __name__ == "__main__":
     parser.add_argument("setup")
     parser.add_argument("party")
 
+    max_round = 8
+
     override = False
     
     args = parser.parse_args()
 
-    investigator = BaseGameInvestigator(args.setup, args.party)
+    investigator = BaseGameInvestigator(args.setup, args.party, run_flips_on_initial_bias=False, track_round_prompt=False)
     
-    investigator.process(override)
+    investigator.process(override, clustering_method="hdbscan")

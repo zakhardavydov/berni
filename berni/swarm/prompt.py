@@ -3,6 +3,7 @@ from typing import Type
 from langchain.llms.base import BaseLanguageModel
 
 from nypd.structures import AgentConfigs, AgentConfigPrePlay, AgentConfig
+from nypd.strategy import registry
 
 from berni.strategy import PromptStrategy
 
@@ -15,10 +16,9 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
             self,
             llm: BaseLanguageModel,
             agent_prompt_dir: str,
-            strategy_prompt_dir: str,
             rule_prompt_path: str,
             debate_topic_path: str,
-            strategy_constructor: Type[PromptStrategy],
+            strategy_name: str,
             default_agent_type: str = "llm",
             bias_scores: dict[str, float] | None = None
     ):
@@ -27,11 +27,10 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
         self._bias_scores = bias_scores
 
         self.agents = self.get_prompts(agent_prompt_dir)
-        self.strategies = self.get_prompts(strategy_prompt_dir)
         self.rules_prompt = self.get_prompt(rule_prompt_path)
         self.debate_topic = self.get_prompt(debate_topic_path)
 
-        self._strategy_constructor = strategy_constructor
+        self._strategy_name = strategy_name
 
     def get_agent_ratio(self) -> dict[str, float]:
         return {
@@ -40,13 +39,13 @@ class PromptSwarmGenerator(AbsSwarmGenerator):
 
     def get_strategy_ratio(self) -> dict[str, float]:
         return {
-            strategy_name: 1 / len(self.strategies) for strategy_name in self.strategies.keys()
+            self._strategy_name: 1
         }
 
     def _init_strategy(self) -> list[PromptStrategy]:
+        strategy_constructor = registry.registry[self._default_agent_type][self._strategy_name]
         return [
-            self._strategy_constructor(llm=self._llm, id=strategy_name, prompt=prompt, debate_topic=self.debate_topic)
-            for strategy_name, prompt in self.strategies.items()
+            strategy_constructor(llm=self._llm, id=strategy_constructor.name, prompt="", debate_topic=self.debate_topic)
         ]
 
     def generate(self, ratio_override: dict[float, float] | None = None, *args, **kwargs) -> tuple[AgentConfigs, list[PromptStrategy]]:

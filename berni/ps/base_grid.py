@@ -77,6 +77,7 @@ class BaseGridPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
     
     def seed(
             self,
+            registry,
             env: AbsEnv,
             agents: AgentConfigs
     )  -> tuple[list[BaseAgent], dict[str, float]]:
@@ -96,7 +97,7 @@ class BaseGridPartnerSelection(AbsSeed, StructuredPartnerSelection, ABC):
             for col in range(self.grid_size):
                 party = self._party[self._matrix[row, col]]
                 constructor = agent_registry.registry[party.config.type]
-                strategy, st_id = NaiveSeed.pick_strategy(party.config, constructor)
+                strategy, st_id = NaiveSeed.pick_strategy(registry, party.config, constructor)
                 agent_id = self.row_col_to_index(row, col)
                 agent = constructor(env=env, id=agent_id, strategy=strategy, **party.config.params)
                 out.append(agent)
