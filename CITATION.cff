@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Davydov"
+  given-names: "Zakhar"
+title: "BERNI: Framework for modelling agent-based societies that evolve with text interactions"
+version: 0.0.1
+date-released: 2024-05-12
+url: "https://github.com/zakhardavydov/berni"
