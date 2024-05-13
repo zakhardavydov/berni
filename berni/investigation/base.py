@@ -165,19 +165,10 @@ class BaseGameInvestigator:
         return combined_df
     
     def opinion_dynamics_viz(self, df: pd.DataFrame, prefix: str):
-        noise = np.random.normal(0, 0.3, size=len(df)) + df['bias_av']
-        df['bias_av_noisy'] = df['bias_av'] + noise
-
-        df['std_dev'] = df['bias_av_noisy'].std()
-
         palette = sns.color_palette("viridis")
         sns.set_theme(style="darkgrid")
         g = sns.FacetGrid(df, row="grid_size", col="prompt_structure", palette=palette)
-        g.map_dataframe(sns.lineplot, x='round', y='bias_av_noisy', hue=self._og, estimator='mean', ci='sd', palette=palette)
-        for ax in g.axes.flat:
-            for line in range(len(df['grid_size'].unique())):
-                ax.errorbar(df[df['grid_size'] == line]['round'], df[df['grid_size'] == line]['bias_av_noisy'],
-                            yerr=df[df['grid_size'] == line]['std_dev'], fmt='none', capsize=3, color="gray")
+        g.map_dataframe(sns.lineplot, x='round', y='bias_av', hue=self._og, estimator='mean', ci='sd', palette=palette)
         g.add_legend()
         g.set_titles(row_template='{row_name}', col_template='{col_name}', fontsize=8)
         g.set_axis_labels('Round', 'Average Bias')

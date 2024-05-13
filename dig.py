@@ -22,6 +22,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    investigator = BaseGameInvestigator(args.setup, args.party, run_flips_on_initial_bias=False, track_round_prompt=False)
+    investigator = BaseGameInvestigator(args.setup, args.party, run_flips_on_initial_bias=False, track_round_prompt=True)
     
-    investigator.process(override, clustering_method="hdbscan")
+    investigator.process(override)
