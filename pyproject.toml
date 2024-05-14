@@ -22,7 +22,7 @@ mpld3 = "^0.5.9"
 statsmodels = "^0.14.0"
 jupyterlab = "^4.0.7"
 pydantic-settings = "^2.0.3"
-openai = "^0.28.1"
+openai = "1.30.0"
 imageio = "^2.34.0"
 colorcet = "^3.1.0"
 networkx = "^3.2.1"
@@ -31,6 +31,8 @@ langchain-community = "^0.0.33"
 transformers = "^4.39.3"
 torch = "^2.2.2"
 accelerate = "^0.29.2"
+langchain-openai = "^0.1.6"
+pygraphviz = "1.13"
 
 
 [build-system]
